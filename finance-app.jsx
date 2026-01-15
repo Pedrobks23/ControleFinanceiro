@@ -133,6 +133,7 @@ const ExpenseForm = ({ onSubmit, onClose, initialData, categories, cards }) => {
     amount: '',
     category: categories[0],
     type: 'single', // single, installment, fixed
+    installmentValueMode: 'per', // per, total
     installments: 1,
     currentInstallment: 1,
     startMonth: getMonthYear(),
@@ -145,11 +146,16 @@ const ExpenseForm = ({ onSubmit, onClose, initialData, categories, cards }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const installments = parseInt(form.installments) || 1;
+    const rawAmount = parseFloat(form.amount) || 0;
+    const amount = form.type === 'installment' && form.installmentValueMode === 'total'
+      ? (installments > 0 ? rawAmount / installments : 0)
+      : rawAmount;
     onSubmit({
       ...form,
       id: form.id || generateId(),
-      amount: parseFloat(form.amount) || 0,
-      installments: parseInt(form.installments) || 1,
+      amount,
+      installments,
       currentInstallment: parseInt(form.currentInstallment) || 1,
       purchaseDay: parseInt(form.purchaseDay) || 1
     });
@@ -171,7 +177,9 @@ const ExpenseForm = ({ onSubmit, onClose, initialData, categories, cards }) => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-300 mb-1">Valor</label>
+        <label className="block text-sm font-medium text-slate-300 mb-1">
+          {form.type === 'installment' && form.installmentValueMode === 'total' ? 'Valor total' : 'Valor'}
+        </label>
         <input
           type="number"
           step="0.01"
@@ -281,6 +289,28 @@ const ExpenseForm = ({ onSubmit, onClose, initialData, categories, cards }) => {
 
       {form.type === 'installment' && (
         <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-slate-300 mb-2">Tipo de valor</label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { value: 'per', label: 'Valor da parcela' },
+                { value: 'total', label: 'Valor total' }
+              ].map(option => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setForm({ ...form, installmentValueMode: option.value })}
+                  className={`flex items-center justify-center gap-1 p-3 rounded-xl border transition-all ${
+                    form.installmentValueMode === option.value
+                      ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
+                      : 'bg-slate-800/30 border-white/10 text-slate-400 hover:bg-slate-800/50'
+                  }`}
+                >
+                  <span className="text-xs font-medium">{option.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1">Parcela Atual</label>
             <input
